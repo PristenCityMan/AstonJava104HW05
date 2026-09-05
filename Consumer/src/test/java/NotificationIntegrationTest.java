@@ -1,0 +1,41 @@
+import com.icegreen.greenmail.junit5.GreenMailExtension;
+import com.icegreen.greenmail.util.ServerSetupTest;
+import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.ResponseEntity;
+import ru.aston.homework05.dto.UserEvent;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class NotificationIntegrationTest {
+    @RegisterExtension
+    static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP);
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    @Test
+    public void testDirectEmailNotificationApi() throws Exception {
+        // Given
+        UserEvent event = new UserEvent("CREATE", "test@example.com");
+
+        // When
+        ResponseEntity<Void> response = restTemplate.postForEntity("/api/notifications/send", event, Void.class);
+
+        // Then
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+
+        // Проверяем, что GreenMail перехватил 1 письмо
+        MimeMessage[] receivedMessages = greenMail.getReceivedMessages();
+        assertThat(receivedMessages.length).isEqualTo(1);
+
+        MimeMessage message = receivedMessages[0];
+        assertThat(message.getAllRecipients()[0].toString()).isEqualTo("test@example.com");
+        assertThat(message.getContent().toString()).contains("Ваш аккаунт на сайте ваш сайт был успешно создан.");
+    }
+}

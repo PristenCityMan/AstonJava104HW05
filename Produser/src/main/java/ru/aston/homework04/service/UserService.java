@@ -13,11 +13,12 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final KafkaProducerService kafkaProducerService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, KafkaProducerService kafkaProducerService) {
         this.userRepository = userRepository;
+        this.kafkaProducerService = kafkaProducerService;
     }
-
     @Transactional(readOnly = true)
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
@@ -39,6 +40,9 @@ public class UserService {
         }
         User user = new User(userDto.getName(), userDto.getEmail(), userDto.getAge());
         User savedUser = userRepository.save(user);
+
+        kafkaProducerService.sendUserEvent("CREATE", savedUser.getEmail());
+
         return convertToDto(savedUser);
     }
 
@@ -54,10 +58,11 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Пользователь не найден");
-        }
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        userRepository.delete(user);
+
+        kafkaProducerService.sendUserEvent("DELETE", user.getEmail());
     }
 
     private UserDto convertToDto(User user) {
