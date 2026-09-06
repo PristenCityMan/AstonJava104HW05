@@ -1,3 +1,5 @@
+package ru.aston.homework05;
+
 import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import jakarta.mail.internet.MimeMessage;
@@ -8,10 +10,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import ru.aston.homework05.dto.UserEvent;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@EmbeddedKafka(
+        partitions = 1,
+        brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" }
+)
 public class NotificationIntegrationTest {
     @RegisterExtension
     static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP);
