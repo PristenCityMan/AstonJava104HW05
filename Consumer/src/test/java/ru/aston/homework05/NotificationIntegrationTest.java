@@ -5,6 +5,7 @@ import com.icegreen.greenmail.util.ServerSetupTest;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" }
 )
 public class NotificationIntegrationTest {
+
     @RegisterExtension
     static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP);
 
@@ -28,16 +30,13 @@ public class NotificationIntegrationTest {
 
     @Test
     public void testDirectEmailNotificationApi() throws Exception {
-        // Given
+
         UserEvent event = new UserEvent("CREATE", "test@example.com");
 
-        // When
         ResponseEntity<Void> response = restTemplate.postForEntity("/api/notifications/send", event, Void.class);
 
-        // Then
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 
-        // Проверяем, что GreenMail перехватил 1 письмо
         MimeMessage[] receivedMessages = greenMail.getReceivedMessages();
         assertThat(receivedMessages.length).isEqualTo(1);
 

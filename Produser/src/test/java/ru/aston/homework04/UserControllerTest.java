@@ -1,7 +1,11 @@
 package ru.aston.homework04;
 
+import org.mockito.Mock;
 import ru.aston.homework04.dto.UserDto;
 import ru.aston.homework04.controller.UserController;
+import ru.aston.homework04.entity.User;
+import ru.aston.homework04.repository.UserRepository;
+import ru.aston.homework04.service.KafkaProducerService;
 import ru.aston.homework04.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -29,6 +36,13 @@ class UserControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private KafkaProducerService kafkaProducerService;
+
 
     @Test
     void shouldGetAllUsers() throws Exception {
@@ -47,7 +61,7 @@ class UserControllerTest {
         UserDto outputDto = new UserDto(1L, "Ivan", "ivan@mail.com", 25, LocalDateTime.now());
 
 
-        Mockito.when(userService.createUser(Mockito.any(UserDto.class))).thenReturn(outputDto);
+        Mockito.when(userService.createUser(any(UserDto.class))).thenReturn(outputDto);
 
 
         mockMvc.perform(post("/api/users")
@@ -56,5 +70,8 @@ class UserControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("Ivan"));
+
+        verify(userRepository, times(1)).save(any(User.class));
+        verify(kafkaProducerService, times(1)).sendUserEvent("CREATE", "ivan@mail.com");
     }
 }

@@ -1,8 +1,10 @@
 package ru.aston.homework05.services;
 
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import ru.aston.homework05.models.NotificationType;
 
 @Service
 public class EmailService {
@@ -13,19 +15,26 @@ public class EmailService {
     }
 
     public void sendNotification(String action, String email) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
 
-        if ("CREATE".equalsIgnoreCase(action)) {
-            message.setSubject("Регистрация аккаунта");
-            message.setText("Здравствуйте! Ваш аккаунт на сайте ваш сайт был успешно создан.");
-        } else if ("DELETE".equalsIgnoreCase(action)) {
-            message.setSubject("Удаление аккаунта");
-            message.setText("Здравствуйте! Ваш аккаунт был удалён.");
-        } else {
+        NotificationType notificationType = NotificationType.fromString(action);
+
+        if (notificationType == null) {
+            System.out.printf("Неизвестный тип операции для уведомления: %s%n", action);
             return;
         }
 
-        mailSender.send(message);
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject(notificationType.getSubject());
+        message.setText(notificationType.getText());
+
+        try
+        {mailSender.send(message);
+            System.out.printf("Сообщение на адрес %s успешно отправлено%n", email);
+        }
+        catch (MailException e)
+        {
+            System.out.printf("Ошибка при отправке email на адрес %s:%s%n", email, e.getMessage());
+        }
     }
 }
