@@ -1,12 +1,26 @@
 package ru.aston.homework04.dto;
 
+import org.springframework.hateoas.RepresentationModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
-public class UserDto {
+
+@Schema(description = "Сущность пользователя для передачи данных")
+public class UserDto extends RepresentationModel<UserDto> {
+
+    @Schema(description = "Уникальный идентификатор", example = "1")
     private Long id;
+
+    @Schema(description = "Имя пользователя", example = "Иван Иванов")
     private String name;
+
+    @Schema(description = "Электронная почта", example = "ivan@example.com")
     private String email;
+
+    @Schema(description = "Возраст пользователя", example = "25")
     private Integer age;
+
+    @Schema(description = "Дата и время создания профиля", example = "2026-09-11T14:13:00")
     private LocalDateTime createdAt;
 
     public UserDto() {}
