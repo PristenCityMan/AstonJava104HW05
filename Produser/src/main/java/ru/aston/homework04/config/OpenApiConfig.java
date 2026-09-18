@@ -1,0 +1,18 @@
+package ru.aston.homework04.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("User Service API (aston.Homework06)")
+                        .description("Домашнее задание №6 с добавлением HATEOAS и Swagger-документации"));
+    }
+}
