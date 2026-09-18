@@ -4,15 +4,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.Link;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.aston.homework04.assembler.UserModelAssembler;
 import ru.aston.homework04.dto.UserDto;
 import ru.aston.homework04.service.UserService;
-import java.util.List;
 
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -23,53 +26,51 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class UserController {
 
     private final UserService userService;
+    private final UserModelAssembler userModelAssembler;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserModelAssembler userModelAssembler) {
         this.userService = userService;
+        this.userModelAssembler = userModelAssembler;
     }
 
     @GetMapping
     @Operation(summary = "Получить список всех пользователей", description = "Возвращает список всех пользователей с навигационными ссылками")
-    public ResponseEntity<CollectionModel<UserDto>> getAllUsers() {
-        List<UserDto> users = userService.getAllUsers();
+    public ResponseEntity<CollectionModel<EntityModel<UserDto>>> getAllUsers() {
+        List<EntityModel<UserDto>> users = userService.getAllUsers().stream()
+                .map(userModelAssembler::toModel)
+                .collect(Collectors.toList());
 
-        for (UserDto user : users) {
-            addUserLinks(user);
-        }
-        Link selfLink = linkTo(methodOn(UserController.class).getAllUsers()).withSelfRel();
-        CollectionModel<UserDto> result = CollectionModel.of(users, selfLink);
+        CollectionModel<EntityModel<UserDto>> collectionModel = CollectionModel.of(users,
+                linkTo(methodOn(UserController.class).getAllUsers()).withSelfRel());
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Получить пользователя по ID", description = "Возвращает данные пользователя и связанные действия")
     @ApiResponse(responseCode = "200", description = "Пользователь успешно найден")
     @ApiResponse(responseCode = "404", description = "Пользователь не найден")
-    public ResponseEntity<UserDto> getUserById(
+    public ResponseEntity<EntityModel<UserDto>> getUserById(
             @PathVariable @Parameter(description = "Идентификатор пользователя") Long id) {
         UserDto userDto = userService.getUserById(id);
-        addUserLinks(userDto);
-        return ResponseEntity.ok(userDto);
+        return ResponseEntity.ok(userModelAssembler.toModel(userDto));
     }
 
     @PostMapping
     @Operation(summary = "Создать нового пользователя", description = "Создает пользователя и генерирует Kafka событие CREATE")
     @ApiResponse(responseCode = "201", description = "Пользователь успешно создан")
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto) {
+    public ResponseEntity<EntityModel<UserDto>> createUser(@Valid @RequestBody UserDto userDto) {
         UserDto createdUser = userService.createUser(userDto);
-        addUserLinks(createdUser);
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+        return new ResponseEntity<>(userModelAssembler.toModel(createdUser), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Обновить существующего пользователя", description = "Обновляет данные профиля по ID")
-    public ResponseEntity<UserDto> updateUser(
+    public ResponseEntity<EntityModel<UserDto>> updateUser(
             @PathVariable @Parameter(description = "Идентификатор пользователя") Long id,
-            @RequestBody UserDto userDto) {
+            @Valid @RequestBody UserDto userDto) {
         UserDto updatedUser = userService.updateUser(id, userDto);
-        addUserLinks(updatedUser);
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(userModelAssembler.toModel(updatedUser));
     }
 
     @DeleteMapping("/{id}")
@@ -79,12 +80,5 @@ public class UserController {
             @PathVariable @Parameter(description = "Идентификатор пользователя") Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private void addUserLinks(UserDto userDto) {
-        userDto.add(linkTo(methodOn(UserController.class).getUserById(userDto.getId())).withSelfRel());
-        userDto.add(linkTo(methodOn(UserController.class).updateUser(userDto.getId(), null)).withRel("update"));
-        userDto.add(linkTo(methodOn(UserController.class).deleteUser(userDto.getId())).withRel("delete"));
-        userDto.add(linkTo(methodOn(UserController.class).getAllUsers()).withRel("all-users"));
     }
 }
