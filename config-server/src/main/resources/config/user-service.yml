@@ -1,0 +1,48 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: user-service
+
+  # Подключение к БД
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: Ascdfg56
+    driver-class-name: org.postgresql.Driver
+
+  # JPA / Hibernate настройки
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Liquibase
+  liquibase:
+    enabled: true
+
+  # Kafka
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Кастомные настройки приложения (Kafka топик)
+app:
+  kafka:
+    notification-topic: user-notifications
+# Конфигурация параметров Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      notificationServiceCB:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
