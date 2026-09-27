@@ -102,7 +102,7 @@
                 <version>5.0.3</version>
                 <configuration>
                     <changeLogFile>src/main/java/resources/db/changelog/db.changelog-master.yaml</changeLogFile>
-                    <url>jdbc:postgresql://localhost:5432/postgres</url>
+                    <url>jdbc:postgresql://postgres:5432/postgres</url>
                     <username>postgres</username>
                     <password>Ascdfg56</password>
                 </configuration>

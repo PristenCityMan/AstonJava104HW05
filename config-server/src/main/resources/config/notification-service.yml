@@ -4,7 +4,7 @@ server:
 spring:
   # Kafka
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     consumer:
       group-id: notification-group
       auto-offset-reset: earliest
@@ -31,3 +31,8 @@ spring:
           auth: false
           starttls:
             enable: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
